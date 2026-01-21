@@ -1,0 +1,54 @@
+# Archivos de entorno y credenciales
+.env
+*.env
+
+# Datos sensibles del proyecto
+1. Data/
+3. Inyectado/
+4. INFORMACION EMPRESA/
+5. IMAGENES/
+
+# Carpetas de trabajo y generados
+generados/
+proyectos/
+
+# Archivos de datos Excel del proyecto
+DATA*.xlsx
+*CAXAS*.xlsx
+Copia*.xlsx
+Lista Maestra*.xlsx
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Archivos temporales de Office
+~$*.docx
+~$*.xlsx
+*.tmp
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archivos de respaldo
+*.bak
+*.backup
