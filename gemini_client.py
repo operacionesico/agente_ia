@@ -3,7 +3,7 @@ Cliente para interactuar con Gemini API.
 Maneja la generación de texto mediante IA.
 """
 
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 
