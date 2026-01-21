@@ -43,8 +43,11 @@ class GeminiClient:
                 "Configúrala en .env o en Streamlit secrets"
             )
         
-        # Configurar cliente Gemini
-        self.client = genai.Client(api_key=api_key)
+        # Configurar Gemini con la API key
+        genai.configure(api_key=api_key)
+        
+        # Crear modelo
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def generar_texto(self, prompt: str, contexto: dict = None, contexto_sistema: str = None) -> str:
         """
@@ -82,11 +85,8 @@ class GeminiClient:
             prompt_completo = prompt
         
         try:
-            # Generar contenido con Gemini usando el modelo actualizado
-            response = self.client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt_completo
-            )
+            # Generar contenido con Gemini
+            response = self.model.generate_content(prompt_completo)
             return response.text
         
         except Exception as e:
