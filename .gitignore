@@ -1,6 +1,7 @@
 # Archivos de entorno y credenciales
 .env
 *.env
+.streamlit/secrets.toml
 
 # Datos sensibles del proyecto
 1. Data/

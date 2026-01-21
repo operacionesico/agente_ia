@@ -23,15 +23,24 @@ class GeminiClient:
         Inicializa el cliente Gemini.
         Lee la API key desde el archivo .env
         """
-        # Cargar variables de entorno desde .env
-        load_dotenv()
+        # Intentar cargar desde Streamlit secrets primero
+        api_key = None
+        try:
+            import streamlit as st
+            if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
+                api_key = st.secrets['GEMINI_API_KEY']
+        except:
+            pass
         
-        # Obtener API key
-        api_key = os.getenv('GEMINI_API_KEY')
+        # Si no está en Streamlit, cargar desde .env
+        if not api_key:
+            load_dotenv()
+            api_key = os.getenv('GEMINI_API_KEY')
+        
         if not api_key:
             raise ValueError(
-                "GEMINI_API_KEY no encontrada en archivo .env. "
-                "Por favor configura tu API key."
+                "GEMINI_API_KEY no encontrada. "
+                "Configúrala en .env o en Streamlit secrets"
             )
         
         # Configurar cliente Gemini
