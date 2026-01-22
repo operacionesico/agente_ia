@@ -1,5 +1,6 @@
 """
 Procesador adaptado para Streamlit - Trabaja con archivos en memoria
+Soporta Word (.docx) y Excel (.xlsx)
 """
 
 import io
@@ -9,6 +10,7 @@ import shutil
 from docx import Document
 import openpyxl
 from datetime import datetime
+import re
 
 from gemini_client import GeminiClient
 from config_auditoria import generar_contexto_base
@@ -17,10 +19,11 @@ from config_auditoria import generar_contexto_base
 def procesar_documentos_streamlit(data_file, plantillas, docs_empresa=None, progress_callback=None):
     """
     Procesa documentos usando archivos en memoria (UploadedFile de Streamlit).
+    Soporta plantillas Word (.docx) y Excel (.xlsx).
     
     Args:
         data_file: UploadedFile con DATA.xlsx
-        plantillas: Lista de UploadedFile con plantillas .docx
+        plantillas: Lista de UploadedFile con plantillas .docx o .xlsx
         docs_empresa: Lista de UploadedFile con documentos empresa (opcional)
         progress_callback: Función callback(progress, mensaje) para actualizar UI
     
@@ -58,7 +61,7 @@ def procesar_documentos_streamlit(data_file, plantillas, docs_empresa=None, prog
         # 4. Generar contexto base
         contexto_sistema = generar_contexto_base(normas, datos_estaticos, None, contexto_empresa)
         
-        # 5. Procesar cada plantilla
+        # 5. Procesar cada plantilla (Word o Excel)
         documentos_generados = []
         num_plantillas = len(plantillas)
         
@@ -68,16 +71,29 @@ def procesar_documentos_streamlit(data_file, plantillas, docs_empresa=None, prog
             
             update_progress(progress_inicio, f"Procesando plantilla {idx+1}/{num_plantillas}: {plantilla_file.name}...")
             
-            # Procesar plantilla
-            doc_generado = procesar_plantilla_memoria(
-                plantilla_file,
-                datos_estaticos,
-                datos_ia,
-                cliente_gemini,
-                contexto_sistema,
-                lambda p: update_progress(progress_inicio + int((progress_fin - progress_inicio) * p / 100), 
-                                         f"Procesando {plantilla_file.name}... {p}%")
-            )
+            # Detectar tipo de archivo y procesar
+            es_excel = plantilla_file.name.endswith('.xlsx')
+            
+            if es_excel:
+                doc_generado = procesar_plantilla_excel_memoria(
+                    plantilla_file,
+                    datos_estaticos,
+                    datos_ia,
+                    cliente_gemini,
+                    contexto_sistema,
+                    lambda p: update_progress(progress_inicio + int((progress_fin - progress_inicio) * p / 100), 
+                                             f"Procesando {plantilla_file.name}... {p}%")
+                )
+            else:
+                doc_generado = procesar_plantilla_word_memoria(
+                    plantilla_file,
+                    datos_estaticos,
+                    datos_ia,
+                    cliente_gemini,
+                    contexto_sistema,
+                    lambda p: update_progress(progress_inicio + int((progress_fin - progress_inicio) * p / 100), 
+                                             f"Procesando {plantilla_file.name}... {p}%")
+                )
             
             # Generar nombre de salida
             nombre_salida = plantilla_file.name.replace('_', '').strip()
@@ -171,7 +187,7 @@ def procesar_docs_empresa_memoria(docs_files, temp_dir):
     return contexto
 
 
-def procesar_plantilla_memoria(plantilla_file, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, progress_callback=None):
+def procesar_plantilla_word_memoria(plantilla_file, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, progress_callback=None):
     """Procesa una plantilla Word desde UploadedFile."""
     
     # Cargar documento desde bytes
@@ -199,10 +215,34 @@ def procesar_plantilla_memoria(plantilla_file, datos_estaticos, datos_ia, client
     return doc
 
 
-def procesar_parrafo_streamlit(parrafo, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas):
-    """Procesa un párrafo individual (adaptado de inyectar_word.py)."""
+def procesar_plantilla_excel_memoria(plantilla_file, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, progress_callback=None):
+    """Procesa una plantilla Excel desde UploadedFile."""
     
-    import re
+    # Cargar workbook desde bytes
+    wb = openpyxl.load_workbook(io.BytesIO(plantilla_file.read()))
+    
+    # Memoria acumulativa
+    memoria_respuestas = []
+    
+    # Contar total de celdas para progreso
+    total_celdas = sum(len(list(ws.iter_rows())) for ws in wb.worksheets)
+    celdas_procesadas = 0
+    
+    # Procesar todas las hojas
+    for sheet in wb.worksheets:
+        for row in sheet.iter_rows():
+            for celda in row:
+                procesar_celda_streamlit(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas)
+                
+                celdas_procesadas += 1
+                if progress_callback and total_celdas > 0:
+                    progress_callback(int((celdas_procesadas / total_celdas) * 100))
+    
+    return wb
+
+
+def procesar_parrafo_streamlit(parrafo, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas):
+    """Procesa un párrafo individual de Word."""
     
     texto = parrafo.text
     cambios = False
@@ -240,10 +280,59 @@ def procesar_parrafo_streamlit(parrafo, datos_estaticos, datos_ia, cliente_gemin
     
     # 3. Limpiar formato
     if cambios:
-        # Limpiar comas y espacios sobrantes
         texto = re.sub(r',\s*,', ',', texto)
         texto = re.sub(r'\s+,', ',', texto)
         texto = re.sub(r',\s*\.', '.', texto)
         texto = re.sub(r'\s{2,}', ' ', texto)
         
         parrafo.text = texto.strip()
+
+
+def procesar_celda_streamlit(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas):
+    """Procesa una celda individual de Excel."""
+    
+    if celda.value is None or not isinstance(celda.value, str):
+        return
+    
+    texto = str(celda.value)
+    cambios = False
+    
+    # 1. Reemplazar etiquetas estáticas
+    for campo, valor in datos_estaticos.items():
+        etiqueta = f"{{{{{campo}}}}}"
+        if etiqueta in texto:
+            texto = texto.replace(etiqueta, str(valor))
+            cambios = True
+    
+    # 2. Procesar etiquetas IA
+    etiquetas_ia = re.findall(r'\{\{IA:([^}]+)\}\}', texto)
+    
+    for nombre_prompt in etiquetas_ia:
+        if nombre_prompt in datos_ia:
+            prompt = datos_ia[nombre_prompt]
+            
+            # Agregar memoria
+            contexto_con_memoria = contexto_sistema
+            if memoria_respuestas:
+                contexto_con_memoria += "\n\n" + "="*80 + "\n"
+                contexto_con_memoria += "RESPUESTAS GENERADAS PREVIAMENTE (mantén coherencia con estos datos):\n"
+                contexto_con_memoria += "="*80 + "\n\n"
+                # Solo últimas 15
+                contexto_con_memoria += "\n\n".join(memoria_respuestas[-15:])
+            
+            respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_con_memoria)
+            
+            # Guardar en memoria
+            memoria_respuestas.append(f"[{nombre_prompt}]\n{respuesta}")
+            
+            texto = texto.replace(f"{{{{IA:{nombre_prompt}}}}}", respuesta)
+            cambios = True
+    
+    # 3. Limpiar formato
+    if cambios:
+        texto = re.sub(r',\s*,', ',', texto)
+        texto = re.sub(r'\s+,', ',', texto)
+        texto = re.sub(r',\s*\.', '.', texto)
+        texto = re.sub(r'\s{2,}', ' ', texto)
+        
+        celda.value = texto.strip()

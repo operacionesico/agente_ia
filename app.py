@@ -28,19 +28,19 @@ with st.sidebar:
     st.markdown("""
     ### Cómo usar:
     1. **Sube el archivo DATA.xlsx** con los datos de la auditoría
-    2. **Sube las plantillas Word** que deseas procesar
+    2. **Sube las plantillas Word y/o Excel** que deseas procesar
     3. **(Opcional)** Sube documentos de la empresa para contexto
     4. **Haz clic en Generar** y espera
     5. **Descarga** los documentos generados
     
     ### Tecnología:
-    - 🤖 Gemini 2.5 Flash
+    - 🤖 Gemini
     - 📝 Procesamiento inteligente
     - 🔒 Datos seguros
     """)
     
     st.markdown("---")
-    st.caption(f"Versión 1.0 | {datetime.now().year}")
+    st.caption(f"Versión 1.1 | {datetime.now().year}")
 
 # Inicializar session state
 if 'documentos_generados' not in st.session_state:
@@ -63,19 +63,29 @@ with col1:
         st.success(f"✅ Archivo cargado: {data_file.name}")
 
 with col2:
-    st.header("📄 Paso 2: Plantillas Word")
+    st.header("📄 Paso 2: Plantillas Word/Excel")
     plantillas = st.file_uploader(
-        "Sube las plantillas (.docx)",
-        type=['docx'],
+        "Sube las plantillas (.docx o .xlsx)",
+        type=['docx', 'xlsx'],
         accept_multiple_files=True,
-        help="Puedes subir múltiples plantillas a la vez"
+        help="Puedes subir plantillas Word y Excel al mismo tiempo"
     )
     
     if plantillas:
+        # Separar por tipo
+        plantillas_word = [p for p in plantillas if p.name.endswith('.docx')]
+        plantillas_excel = [p for p in plantillas if p.name.endswith('.xlsx')]
+        
         st.success(f"✅ {len(plantillas)} plantilla(s) cargada(s)")
         with st.expander("Ver plantillas"):
-            for p in plantillas:
-                st.write(f"- {p.name}")
+            if plantillas_word:
+                st.write("**📝 Word:**")
+                for p in plantillas_word:
+                    st.write(f"- {p.name}")
+            if plantillas_excel:
+                st.write("**📊 Excel:**")
+                for p in plantillas_excel:
+                    st.write(f"- {p.name}")
 
 st.markdown("---")
 
@@ -178,11 +188,17 @@ if st.session_state.procesamiento_completo and st.session_state.documentos_gener
             st.write(f"**{i+1}.** {doc['nombre']}")
         
         with col2:
+            # Determinar MIME type según extensión
+            if doc['nombre'].endswith('.xlsx'):
+                mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            else:
+                mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            
             st.download_button(
                 label="⬇️ Descargar",
                 data=doc['contenido'],
                 file_name=doc['nombre'],
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                mime=mime_type,
                 key=f"download_{i}"
             )
     
