@@ -8,12 +8,17 @@ import tempfile
 import os
 import shutil
 from docx import Document
+from docx.shared import Inches
 import openpyxl
+from openpyxl.drawing.image import Image
 from datetime import datetime
 import re
 
 from gemini_client import GeminiClient
 from config_auditoria import generar_contexto_base
+
+# Configuración
+IMAGENES_DIR = '5. IMAGENES'  # Ruta relativa para Streamlit
 
 
 def procesar_documentos_streamlit(data_file, plantillas, docs_empresa=None, progress_callback=None):

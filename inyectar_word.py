@@ -121,34 +121,35 @@ def procesar_parrafo(parrafo, datos_estaticos, datos_ia, cliente_gemini, context
                 texto = texto.replace(marcador, respuesta)
                 cambios = True
     
-    # 2. Procesar etiquetas de imagen: {{IMG:CAMPO}} - DESACTIVADO TEMPORALMENTE
-    # etiquetas_img = re.findall(r'\{\{IMG:([^}]+)\}\}', texto)
-    # (código comentado - funcionalidad de imágenes pendiente)
-    # for campo_img in etiquetas_img:
-    #     if campo_img in datos_estaticos:
-    #         nombre_archivo = str(datos_estaticos[campo_img])
-    #         ruta_imagen = os.path.join(IMAGENES_DIR, nombre_archivo)
+    # 2. Procesar etiquetas de imagen: {{IMG:CAMPO}}
+    etiquetas_img = re.findall(r'\{\{IMG:([^}]+)\}\}', texto)
+    
+    for campo_img in etiquetas_img:
+        if campo_img in datos_estaticos:
+            nombre_archivo = str(datos_estaticos[campo_img])
+            ruta_imagen = os.path.join(IMAGENES_DIR, nombre_archivo)
             
-    #         if os.path.exists(ruta_imagen):
-    #             # Eliminar el marcador de imagen del texto
-    #             marcador_img = f"{{{{IMG:{campo_img}}}}}"
-    #             texto = texto.replace(marcador_img, "")
-    #             cambios = True
+            if os.path.exists(ruta_imagen):
+                # Eliminar el marcador de imagen del texto
+                marcador_img = f'{{{{IMG:{campo_img}}}}}'  
+                texto = texto.replace(marcador_img, '')
+                cambios = True
                 
-    #             # Limpiar el párrafo y agregar la imagen
-    #             parrafo.clear()
-    #             run = parrafo.add_run()
+                # Limpiar el párrafo y agregar la imagen
+                parrafo.clear()
+                run = parrafo.add_run()
                 
-    #             try:
-    #                 run.add_picture(ruta_imagen, width=Inches(2.0))
-    #                 print(f"   🖼️  Imagen insertada: {nombre_archivo}")
-    #             except Exception as e:
-    #                 parrafo.text = f"[Error insertando imagen: {e}]"
-    #                 print(f"   ⚠️  Error insertando imagen {nombre_archivo}: {e}")
-    #         else:
-    #             texto = texto.replace(f"{{{{IMG:{campo_img}}}}}", f"[Imagen no encontrada: {nombre_archivo}]")
-    #             print(f"   ⚠️  Imagen no encontrada: {ruta_imagen}")
-    #             cambios = True
+                try:
+                    # Insertar imagen con tamaño fijo: 150x150 píxeles ≈ 2.08 inches
+                    run.add_picture(ruta_imagen, width=Inches(2.08), height=Inches(2.08))
+                    print(f'   🖼️  Imagen insertada: {nombre_archivo} (150x150px)')
+                except Exception as e:
+                    parrafo.text = f'[Error insertando imagen: {e}]'
+                    print(f'   ⚠️  Error insertando imagen {nombre_archivo}: {e}')
+            else:
+                texto = texto.replace(f'{{{{IMG:{campo_img}}}}}', f'[Imagen no encontrada: {nombre_archivo}]')
+                print(f'   ⚠️  Imagen no encontrada: {ruta_imagen}')
+                cambios = True
     
     # 3. Luego reemplazar etiquetas estáticas: {{CAMPO}}
     # Buscar todas las etiquetas {{ALGO}} que NO sean {{IA:...}}

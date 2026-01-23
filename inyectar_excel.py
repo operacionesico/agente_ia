@@ -7,6 +7,7 @@ y guarda resultados en '3. Inyectado/'.
 import os
 import glob
 import openpyxl
+from openpyxl.drawing.image import Image
 import re
 from datetime import datetime
 from gemini_client import GeminiClient
@@ -18,6 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '1. Data')
 PLANTILLA_DIR = os.path.join(BASE_DIR, '2. Plantilla')
 INYECTADO_DIR = os.path.join(BASE_DIR, '3. Inyectado')
+IMAGENES_DIR = os.path.join(BASE_DIR, '5. IMAGENES')
 
 def leer_datos_excel():
     """
@@ -143,6 +145,56 @@ def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_si
         celda.value = texto.strip()
 
 
+
+
+def procesar_imagenes_worksheet(ws, datos_estaticos):
+    """
+    Procesa etiquetas de imagen en un worksheet de Excel.
+    Las imágenes se anclan en las celdas que contienen las etiquetas.
+    
+    Args:
+        ws: Worksheet de openpyxl
+        datos_estaticos: Diccionario con nombres de archivos de imagen
+    """
+    for row in ws.iter_rows():
+        for celda in row:
+            if celda.value and isinstance(celda.value, str):
+                texto = str(celda.value)
+                
+                # Buscar etiquetas de imagen
+                etiquetas_img = re.findall(r'\{\{IMG:([^}]+)\}\}', texto)
+                
+                for campo_img in etiquetas_img:
+                    if campo_img in datos_estaticos:
+                        nombre_archivo = str(datos_estaticos[campo_img])
+                        ruta_imagen = os.path.join(IMAGENES_DIR, nombre_archivo)
+                        
+                        if os.path.exists(ruta_imagen):
+                            try:
+                                # Crear objeto imagen
+                                img = Image(ruta_imagen)
+                                
+                                # Redimensionar a 150x150 píxeles
+                                img.width = 150
+                                img.height = 150
+                                
+                                # Anclar en la celda
+                                img.anchor = celda.coordinate
+                                
+                                # Agregar imagen al worksheet
+                                ws.add_image(img)
+                                
+                                # Limpiar texto de celda
+                                celda.value = texto.replace(f'{{{{IMG:{campo_img}}}}}', '')
+                                
+                                print(f'   🖼️  Imagen insertada: {nombre_archivo} en {celda.coordinate} (150x150px)')
+                            except Exception as e:
+                                celda.value = f'[Error insertando imagen: {e}]'
+                                print(f'   ⚠️  Error insertando imagen {nombre_archivo}: {e}')
+                        else:
+                            celda.value = texto.replace(f'{{{{IMG:{campo_img}}}}}', f'[Imagen no encontrada: {nombre_archivo}]')
+                            print(f'   ⚠️  Imagen no encontrada: {ruta_imagen}')
+
 def procesar_excel():
     """
     Función principal que procesa todas las plantillas Excel.
@@ -234,6 +286,9 @@ def procesar_excel():
                 for row in ws.iter_rows():
                     for celda in row:
                         procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas)
+                
+                # Procesar imágenes en esta hoja
+                procesar_imagenes_worksheet(ws, datos_estaticos)
             
             # Generar nombre de salida (quitar guión bajo inicial)
             nombre_salida = nombre_plantilla.lstrip('_')
