@@ -10,7 +10,6 @@ import tempfile
 import os
 import shutil
 
-# Configurar página
 st.set_page_config(
     page_title="Generador de Documentos de Auditoría IA",
     page_icon="📋",
@@ -18,11 +17,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Título principal
 st.title("📋 Generador de Documentos de Auditoría con IA")
 st.markdown("---")
 
-# Sidebar con información
 with st.sidebar:
     st.header("ℹ️ Información")
     st.markdown("""
@@ -42,13 +39,11 @@ with st.sidebar:
     st.markdown("---")
     st.caption(f"Versión 1.1 | {datetime.now().year}")
 
-# Inicializar session state
 if 'documentos_generados' not in st.session_state:
     st.session_state.documentos_generados = None
 if 'procesamiento_completo' not in st.session_state:
     st.session_state.procesamiento_completo = False
 
-# Layout en columnas
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -72,7 +67,6 @@ with col2:
     )
     
     if plantillas:
-        # Separar por tipo
         plantillas_word = [p for p in plantillas if p.name.endswith('.docx')]
         plantillas_excel = [p for p in plantillas if p.name.endswith('.xlsx')]
         
@@ -102,7 +96,6 @@ if docs_empresa:
 
 st.markdown("---")
 
-# Botón de procesamiento
 col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
 
 with col_btn2:
@@ -116,18 +109,14 @@ with col_btn2:
 if not (data_file and plantillas):
     st.warning("⚠️ Debes subir al menos el archivo DATA.xlsx y una plantilla para continuar")
 
-# Procesamiento
 if procesar_btn:
     try:
-        # Importar procesador
         from procesador_streamlit import procesar_documentos_streamlit
         
         with st.spinner("🔄 Procesando documentos con IA... Esto puede tomar varios minutos."):
-            # Crear barra de progreso
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            # Procesar
             status_text.text("Inicializando...")
             progress_bar.progress(10)
             
@@ -141,7 +130,6 @@ if procesar_btn:
             progress_bar.progress(100)
             status_text.text("✅ Procesamiento completado!")
             
-            # Guardar en session state
             st.session_state.documentos_generados = documentos_generados
             st.session_state.procesamiento_completo = True
             
@@ -152,14 +140,12 @@ if procesar_btn:
         st.error(f"❌ Error durante el procesamiento: {str(e)}")
         st.exception(e)
 
-# Mostrar resultados
 if st.session_state.procesamiento_completo and st.session_state.documentos_generados:
     st.markdown("---")
     st.header("📥 Descargar Documentos Generados")
     
     documentos = st.session_state.documentos_generados
     
-    # Crear ZIP con todos los documentos
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for doc in documentos:
@@ -167,7 +153,6 @@ if st.session_state.procesamiento_completo and st.session_state.documentos_gener
     
     zip_buffer.seek(0)
     
-    # Botón para descargar todo
     col_zip1, col_zip2, col_zip3 = st.columns([1, 2, 1])
     with col_zip2:
         st.download_button(
@@ -178,37 +163,76 @@ if st.session_state.procesamiento_completo and st.session_state.documentos_gener
             use_container_width=True
         )
     
-    st.markdown("### Documentos Individuales")
+    docs_principales = [d for d in documentos if d.get('tipo') == 'documento']
+    docs_contexto = [d for d in documentos if d.get('tipo') == 'contexto']
+    docs_memoria = [d for d in documentos if d.get('tipo') == 'memoria']
     
-    # Mostrar cada documento
-    for i, doc in enumerate(documentos):
-        col1, col2 = st.columns([3, 1])
+    if docs_principales:
+        st.markdown("### 📄 Documentos Procesados")
         
-        with col1:
-            st.write(f"**{i+1}.** {doc['nombre']}")
-        
-        with col2:
-            # Determinar MIME type según extensión
-            if doc['nombre'].endswith('.xlsx'):
-                mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            else:
-                mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        for i, doc in enumerate(docs_principales):
+            col1, col2 = st.columns([3, 1])
             
-            st.download_button(
-                label="⬇️ Descargar",
-                data=doc['contenido'],
-                file_name=doc['nombre'],
-                mime=mime_type,
-                key=f"download_{i}"
-            )
+            with col1:
+                st.write(f"**{i+1}.** {doc['nombre']}")
+            
+            with col2:
+                if doc['nombre'].endswith('.xlsx'):
+                    mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                else:
+                    mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                
+                st.download_button(
+                    label="⬇️ Descargar",
+                    data=doc['contenido'],
+                    file_name=doc['nombre'],
+                    mime=mime_type,
+                    key=f"download_doc_{i}"
+                )
     
-    # Botón para limpiar y procesar nuevos documentos
+    if docs_contexto:
+        st.markdown("### 📋 Archivos de Contexto IA")
+        st.caption("Contexto enviado a la IA para generar las respuestas")
+        
+        for i, doc in enumerate(docs_contexto):
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                st.write(f"**📝** {doc['nombre']}")
+            
+            with col2:
+                st.download_button(
+                    label="⬇️ Descargar",
+                    data=doc['contenido'],
+                    file_name=doc['nombre'],
+                    mime="text/plain",
+                    key=f"download_ctx_{i}"
+                )
+    
+    if docs_memoria:
+        st.markdown("### 🧠 Archivos de Memoria IA")
+        st.caption("Registro de todas las respuestas generadas por la IA")
+        
+        for i, doc in enumerate(docs_memoria):
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                st.write(f"**💾** {doc['nombre']}")
+            
+            with col2:
+                st.download_button(
+                    label="⬇️ Descargar",
+                    data=doc['contenido'],
+                    file_name=doc['nombre'],
+                    mime="text/plain",
+                    key=f"download_mem_{i}"
+                )
+    
     st.markdown("---")
     if st.button("🔄 Procesar Nuevos Documentos"):
         st.session_state.documentos_generados = None
         st.session_state.procesamiento_completo = False
         st.rerun()
 
-# Footer
 st.markdown("---")
 st.caption("🤖 Powered by Gemini AI | Desarrollado para auditorías ISO")

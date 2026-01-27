@@ -13,7 +13,6 @@ from gemini_client import GeminiClient
 from config_auditoria import generar_contexto_base
 from lector_informacion import leer_informacion_empresa
 
-# Configuración de rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '1. Data')
 PLANTILLA_DIR = os.path.join(BASE_DIR, '2. Plantilla')
@@ -64,7 +63,6 @@ def leer_datos_excel():
             datos_estaticos[campo] = valor
             print(f"   - Fila {i}: {campo} [STATIC] → {str(valor)[:50]}...")
     
-    # Detectar normas
     normas = []
     for campo, valor in datos_estaticos.items():
         if 'NORMA' in campo.upper() and valor:
@@ -77,7 +75,6 @@ def leer_datos_excel():
         print(f"📋 Normas detectadas: {', '.join(normas)}")
     
     return datos_estaticos, datos_ia, normas
-
 
 def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas):
     """
@@ -97,14 +94,12 @@ def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_si
     texto = str(celda.value)
     cambios = False
     
-    # 1. Reemplazar etiquetas estáticas {{CAMPO}}
     for campo, valor in datos_estaticos.items():
         etiqueta = f"{{{{{campo}}}}}"
         if etiqueta in texto:
             texto = texto.replace(etiqueta, str(valor))
             cambios = True
     
-    # 2. Procesar etiquetas IA {{IA:NOMBRE}}
     etiquetas_ia = re.findall(r'\{\{IA:([^}]+)\}\}', texto)
     
     for nombre_prompt in etiquetas_ia:
@@ -113,10 +108,8 @@ def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_si
             
             print(f"   🤖 Generando contenido IA para: {nombre_prompt}")
             
-            # Generar respuesta sin memoria acumulativa (datos del Excel y RAG son suficientes)
             respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_sistema)
             
-            # Guardar en memoria
             memoria_respuestas.append(f"[{nombre_prompt}]\n{respuesta}")
             
             texto = texto.replace(f"{{{{IA:{nombre_prompt}}}}}", respuesta)
@@ -124,16 +117,13 @@ def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_si
             
             print(f"      ✅ Generado ({len(respuesta)} caracteres)")
     
-    # 3. Limpiar formato
     if cambios:
-        # Limpiar comas y espacios sobrantes
         texto = re.sub(r',\s*,', ',', texto)
         texto = re.sub(r'\s+,', ',', texto)
         texto = re.sub(r',\s*\.', '.', texto)
         texto = re.sub(r'\s{2,}', ' ', texto)
         
         celda.value = texto.strip()
-
 
 def procesar_excel():
     """
@@ -143,23 +133,18 @@ def procesar_excel():
     print("🚀 INICIANDO PROCESAMIENTO DE PLANTILLAS EXCEL")
     print("="*80 + "\n")
     
-    # 1. Crear carpeta de salida si no existe
     os.makedirs(INYECTADO_DIR, exist_ok=True)
     
-    # 2. Leer datos del Excel maestro
     datos_estaticos, datos_ia, normas = leer_datos_excel()
     
     if datos_estaticos is None:
         print("❌ No se pudieron cargar datos. Verifica la carpeta '1. Data'")
         return
     
-    # 2.5 Leer información adicional de la empresa (RAG)
     contexto_empresa = leer_informacion_empresa()
     
-    # 2.6 Generar contexto global de auditoría
     contexto_sistema = generar_contexto_base(normas, datos_estaticos, None, contexto_empresa)
     
-    # 2.7 Guardar contexto en archivo TXT
     ruta_contexto = os.path.join(INYECTADO_DIR, 'CONTEXTO_IA_EXCEL.txt')
     try:
         with open(ruta_contexto, 'w', encoding='utf-8') as f:
@@ -179,7 +164,6 @@ def procesar_excel():
     
     print(f"📊 Datos cargados: {len(datos_estaticos)} variables estáticas, {len(datos_ia)} prompts de IA")
     
-    # 3. Buscar plantillas Excel
     todas_plantillas = glob.glob(os.path.join(PLANTILLA_DIR, '*.xlsx'))
     plantillas = [p for p in todas_plantillas if not os.path.basename(p).startswith('~$')]
     
@@ -191,7 +175,6 @@ def procesar_excel():
     for p in plantillas:
         print(f"   - {os.path.basename(p)}")
     
-    # 4. Inicializar cliente Gemini
     print("\n🤖 Inicializando cliente Gemini...")
     try:
         cliente_gemini = GeminiClient()
@@ -200,7 +183,6 @@ def procesar_excel():
         print(f"   ❌ Error al inicializar Gemini: {e}")
         return
     
-    # 5. Procesar cada plantilla
     print("\n" + "="*80)
     print("📝 PROCESANDO PLANTILLAS")
     print("="*80 + "\n")
@@ -211,31 +193,24 @@ def procesar_excel():
         print("-" * 60)
         
         try:
-            # Cargar workbook
             wb = openpyxl.load_workbook(plantilla_path)
             
-            # Memoria acumulativa para esta plantilla
             memoria_respuestas = []
             
-            # Procesar todas las hojas
             for sheet_name in wb.sheetnames:
                 ws = wb[sheet_name]
                 print(f"\n   📄 Hoja: {sheet_name}")
                 
-                # Procesar todas las celdas
                 for row in ws.iter_rows():
                     for celda in row:
                         procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, memoria_respuestas)
             
-            # Generar nombre de salida (quitar guión bajo inicial)
             nombre_salida = nombre_plantilla.lstrip('_')
             ruta_salida = os.path.join(INYECTADO_DIR, nombre_salida)
             
-            # Guardar documento procesado
             wb.save(ruta_salida)
             print(f"\n   ✅ Guardado: {nombre_salida}")
             
-            # Guardar memoria de respuestas
             if memoria_respuestas:
                 nombre_memoria = f"MEMORIA_{nombre_salida.replace('.xlsx', '.txt')}"
                 ruta_memoria = os.path.join(INYECTADO_DIR, nombre_memoria)
@@ -255,7 +230,6 @@ def procesar_excel():
     print("✅ PROCESAMIENTO COMPLETADO")
     print("="*80)
     print(f"\n📂 Documentos generados en: {INYECTADO_DIR}")
-
 
 if __name__ == "__main__":
     procesar_excel()

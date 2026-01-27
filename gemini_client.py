@@ -7,7 +7,6 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 
-
 class GeminiClient:
     """
     Cliente para generar texto usando Gemini API de Google.
@@ -23,7 +22,6 @@ class GeminiClient:
         Inicializa el cliente Gemini.
         Lee la API key desde el archivo .env
         """
-        # Intentar cargar desde Streamlit secrets primero
         api_key = None
         try:
             import streamlit as st
@@ -32,7 +30,6 @@ class GeminiClient:
         except:
             pass
         
-        # Si no está en Streamlit, cargar desde .env
         if not api_key:
             load_dotenv()
             api_key = os.getenv('GEMINI_API_KEY')
@@ -43,10 +40,8 @@ class GeminiClient:
                 "Configúrala en .env o en Streamlit secrets"
             )
         
-        # Configurar Gemini con la API key
         genai.configure(api_key=api_key)
         
-        # Crear modelo
         self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def generar_texto(self, prompt: str, contexto: dict = None, contexto_sistema: str = None) -> str:
@@ -71,30 +66,23 @@ class GeminiClient:
             >>> print(resultado)
             "Buenos días, Acme Corp..."
         """
-        # Reemplazar variables en el prompt con valores del contexto
         if contexto:
             for key, value in contexto.items():
-                # Buscar {{KEY}} y reemplazar con el valor
                 placeholder = f"{{{{{key}}}}}"
                 prompt = prompt.replace(placeholder, str(value))
         
-        # Construir prompt completo con contexto sistema
         if contexto_sistema:
             prompt_completo = f"{contexto_sistema}\n\n---\n\nTAREA ESPECÍFICA:\n{prompt}"
         else:
             prompt_completo = prompt
         
         try:
-            # Generar contenido con Gemini
             response = self.model.generate_content(prompt_completo)
             return response.text
         
         except Exception as e:
-            # Si hay error, retornar mensaje descriptivo
             return f"[ERROR IA: {str(e)}]"
 
-
-# Función de prueba (solo para verificar que funciona)
 if __name__ == "__main__":
     print("Probando GeminiClient...")
     

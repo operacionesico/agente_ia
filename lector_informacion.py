@@ -74,7 +74,6 @@ def leer_informacion_empresa(carpeta="4. INFORMACION EMPRESA"):
     if not os.path.exists(carpeta):
         return None
     
-    # Buscar todos los archivos
     archivos_pdf = glob.glob(os.path.join(carpeta, "*.pdf"))
     archivos_word = glob.glob(os.path.join(carpeta, "*.docx"))
     archivos_excel = glob.glob(os.path.join(carpeta, "*.xlsx"))
@@ -91,28 +90,24 @@ def leer_informacion_empresa(carpeta="4. INFORMACION EMPRESA"):
     contenido_total += "INFORMACIÓN ADICIONAL DE LA EMPRESA (usar para generar contenido realista)\n"
     contenido_total += "="*80 + "\n\n"
     
-    # Procesar PDFs
     for archivo in archivos_pdf:
         nombre = os.path.basename(archivo)
         print(f"   📄 {nombre}")
         texto = extraer_texto_pdf(archivo)
         contenido_total += f"\n--- Archivo: {nombre} ---\n{texto}\n\n"
     
-    # Procesar Word
     for archivo in archivos_word:
         nombre = os.path.basename(archivo)
         print(f"   📝 {nombre}")
         texto = extraer_texto_word(archivo)
         contenido_total += f"\n--- Archivo: {nombre} ---\n{texto}\n\n"
     
-    # Procesar Excel
     for archivo in archivos_excel:
         nombre = os.path.basename(archivo)
         print(f"   📊 {nombre}")
         texto = extraer_texto_excel(archivo)
         contenido_total += f"\n--- Archivo: {nombre} ---\n{texto}\n\n"
     
-    # Procesar TXT
     for archivo in archivos_txt:
         nombre = os.path.basename(archivo)
         print(f"   📃 {nombre}")
@@ -125,10 +120,9 @@ def leer_informacion_empresa(carpeta="4. INFORMACION EMPRESA"):
     
     return contenido_total
 
-# Función de prueba
 if __name__ == "__main__":
     info = leer_informacion_empresa()
     if info:
-        print(info[:500])  # Mostrar primeros 500 caracteres
+        print(info[:500])
     else:
         print("No se encontró información empresarial")

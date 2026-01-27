@@ -5,7 +5,6 @@ Define el contexto base que se aplica a TODAS las generaciones de IA.
 
 import os
 
-# Leer prompt desde archivo externo
 def cargar_prompt_sistema():
     """Lee el prompt del sistema desde el archivo prompt.txt"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,9 +25,7 @@ RUC: {RUC}
 Genera contenido profesional y específico para auditorías.
 """
 
-# Cargar prompt al iniciar
 CONTEXTO_SISTEMA = cargar_prompt_sistema()
-
 
 def formatear_procesos(datos_estaticos):
     """
@@ -44,7 +41,6 @@ def formatear_procesos(datos_estaticos):
     procesos_texto += "PERSONAL DE LA EMPRESA (USAR ESTOS NOMBRES REALES):\n\n"
     procesos_texto += "IMPORTANTE: SOLO usa estos nombres reales en las entrevistas. NO inventes nombres.\n\n"
     
-    # Detectar cuántos procesos hay (buscar PROCESO_1, PROCESO_2, etc.)
     num_proceso = 1
     procesos_encontrados = []
     
@@ -55,7 +51,6 @@ def formatear_procesos(datos_estaticos):
         tipo = datos_estaticos.get(f'TIPOPROC_{num_proceso}', '')
         cantidad = datos_estaticos.get(f'CANTPROC_{num_proceso}', '')
         
-        # Solo agregar si hay información
         if proceso or responsable or nombre:
             procesos_encontrados.append({
                 'num': num_proceso,
@@ -68,7 +63,6 @@ def formatear_procesos(datos_estaticos):
         
         num_proceso += 1
     
-    # Formatear procesos encontrados
     for proc in procesos_encontrados:
         procesos_texto += f"{proc['num']}. {proc['proceso']}\n"
         if proc['responsable']:
@@ -108,15 +102,12 @@ def generar_contexto_base(normas, datos_estaticos, catalogo_documentos=None, con
         RUC=datos_estaticos.get('RUC', 'No especificado')
     )
     
-    # Agregar catálogo de documentos si existe
     if catalogo_documentos:
         contexto += catalogo_documentos
     
-    # Agregar información empresarial si existe
     if contexto_empresa:
         contexto += contexto_empresa
         
-    # Agregar SERVICIO AUDITADO ESPECÍFICO (Prioridad Alta)
     servicio_auditado = datos_estaticos.get('SERVICIO_1')
     if servicio_auditado:
         contexto += f"\n\n═══════════════════════════════════════════════════════════════════════\n"
@@ -125,7 +116,6 @@ def generar_contexto_base(normas, datos_estaticos, catalogo_documentos=None, con
         contexto += f"👉 {servicio_auditado}\n"
         contexto += f"═══════════════════════════════════════════════════════════════════════\n"
     
-    # Agregar información de procesos y personal
     procesos_info = formatear_procesos(datos_estaticos)
     if procesos_info:
         contexto += procesos_info
