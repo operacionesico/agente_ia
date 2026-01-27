@@ -29,6 +29,64 @@ Genera contenido profesional y específico para auditorías.
 # Cargar prompt al iniciar
 CONTEXTO_SISTEMA = cargar_prompt_sistema()
 
+
+def formatear_procesos(datos_estaticos):
+    """
+    Extrae y formatea la información de procesos y personal desde datos_estaticos.
+    
+    Args:
+        datos_estaticos: Diccionario con todos los datos del Excel
+    
+    Returns:
+        String formateado con la lista de procesos y personal
+    """
+    procesos_texto = "\n\n═══════════════════════════════════════════════════════════════════════\n"
+    procesos_texto += "PERSONAL DE LA EMPRESA (USAR ESTOS NOMBRES REALES):\n\n"
+    procesos_texto += "IMPORTANTE: SOLO usa estos nombres reales en las entrevistas. NO inventes nombres.\n\n"
+    
+    # Detectar cuántos procesos hay (buscar PROCESO_1, PROCESO_2, etc.)
+    num_proceso = 1
+    procesos_encontrados = []
+    
+    while f'PROCESO_{num_proceso}' in datos_estaticos:
+        proceso = datos_estaticos.get(f'PROCESO_{num_proceso}', '')
+        responsable = datos_estaticos.get(f'RESPONSABLE_PROC{num_proceso}', '')
+        nombre = datos_estaticos.get(f'NOMBRE_RESP{num_proceso}', '')
+        tipo = datos_estaticos.get(f'TIPOPROC_{num_proceso}', '')
+        cantidad = datos_estaticos.get(f'CANTPROC_{num_proceso}', '')
+        
+        # Solo agregar si hay información
+        if proceso or responsable or nombre:
+            procesos_encontrados.append({
+                'num': num_proceso,
+                'proceso': proceso,
+                'responsable': responsable,
+                'nombre': nombre,
+                'tipo': tipo,
+                'cantidad': cantidad
+            })
+        
+        num_proceso += 1
+    
+    # Formatear procesos encontrados
+    for proc in procesos_encontrados:
+        procesos_texto += f"{proc['num']}. {proc['proceso']}\n"
+        if proc['responsable']:
+            procesos_texto += f"   - Cargo: {proc['responsable']}\n"
+        if proc['nombre']:
+            procesos_texto += f"   - Nombre: {proc['nombre']}\n"
+        if proc['tipo']:
+            procesos_texto += f"   - Tipo: {proc['tipo']}\n"
+        if proc['cantidad']:
+            procesos_texto += f"   - Personal: {proc['cantidad']} persona(s)\n"
+        procesos_texto += "\n"
+    
+    if procesos_encontrados:
+        procesos_texto += "═══════════════════════════════════════════════════════════════════════\n"
+        return procesos_texto
+    else:
+        return ""
+
 def generar_contexto_base(normas, datos_estaticos, catalogo_documentos=None, contexto_empresa=None):
     """
     Genera el contexto base personalizado para esta ejecución.
@@ -66,5 +124,10 @@ def generar_contexto_base(normas, datos_estaticos, catalogo_documentos=None, con
         contexto += f"Todas las evidencias y muestreos deben enfocarse en:\n"
         contexto += f"👉 {servicio_auditado}\n"
         contexto += f"═══════════════════════════════════════════════════════════════════════\n"
+    
+    # Agregar información de procesos y personal
+    procesos_info = formatear_procesos(datos_estaticos)
+    if procesos_info:
+        contexto += procesos_info
     
     return contexto

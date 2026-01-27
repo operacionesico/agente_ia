@@ -113,16 +113,8 @@ def procesar_celda(celda, datos_estaticos, datos_ia, cliente_gemini, contexto_si
             
             print(f"   🤖 Generando contenido IA para: {nombre_prompt}")
             
-            # Agregar memoria acumulativa
-            contexto_con_memoria = contexto_sistema
-            if memoria_respuestas:
-                contexto_con_memoria += "\n\n" + "="*80 + "\n"
-                contexto_con_memoria += "RESPUESTAS GENERADAS PREVIAMENTE (mantén coherencia con estos datos):\n"
-                contexto_con_memoria += "="*80 + "\n\n"
-                # Solo últimas 15 respuestas
-                contexto_con_memoria += "\n\n".join(memoria_respuestas[-15:])
-            
-            respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_con_memoria)
+            # Generar respuesta sin memoria acumulativa (datos del Excel y RAG son suficientes)
+            respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_sistema)
             
             # Guardar en memoria
             memoria_respuestas.append(f"[{nombre_prompt}]\n{respuesta}")

@@ -99,16 +99,8 @@ def procesar_parrafo(parrafo, datos_estaticos, datos_ia, cliente_gemini, context
             print(f"   🤖 Generando contenido IA para: {nombre_prompt}...")
             prompt = datos_ia[nombre_prompt]
             
-            # Incluir respuestas previas en el contexto para coherencia
-            contexto_con_memoria = contexto_sistema
-            if memoria_respuestas:
-                contexto_con_memoria += "\n\n" + "="*80 + "\n"
-                contexto_con_memoria += "RESPUESTAS GENERADAS PREVIAMENTE (mantén coherencia con estos datos):\n"
-                contexto_con_memoria += "="*80 + "\n\n"
-                # OPTIMIZACIÓN: Solo incluir las últimas 15 respuestas para no saturar contexto
-                contexto_con_memoria += "\n\n".join(memoria_respuestas[-15:])
-            
-            respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_con_memoria)
+            # Generar respuesta sin memoria acumulativa (datos del Excel y RAG son suficientes)
+            respuesta = cliente_gemini.generar_texto(prompt, datos_estaticos, contexto_sistema)
             
             if respuesta.startswith("[ERROR"):
                 print(f"      ⚠️ {respuesta}")

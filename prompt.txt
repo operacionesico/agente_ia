@@ -53,10 +53,12 @@ Párrafo 3 - EVIDENCIA TÉCNICA ENCONTRADA:
 
 NOMBRES Y CARGOS:
 
-- Genera nombres completos peruanos/latinoamericanos realistas
-- Ejemplos: Ing. Carlos Mendoza, Lic. María Rodríguez, Tec. Juan Paredes
+CRÍTICO: El sistema te proporcionará una lista de PERSONAL REAL de la empresa.
+- SOLO usa los nombres y cargos de esa lista
+- NO inventes nombres bajo ninguna circunstancia
+- Si necesitas mencionar a alguien, usa ÚNICAMENTE los nombres proporcionados
 - Mantén consistencia: mismo cargo = mismo nombre en todo el documento
-- Cargos típicos: Gerente General, Jefe de Calidad, Responsable SST, Jefe de Proyectos, Supervisor de Obra, Coordinador Ambiental
+- Si la lista de personal no está disponible, usa cargos genéricos sin nombres (ej: "el Gerente General")
 
 ═══════════════════════════════════════════════════════════════════════
 
