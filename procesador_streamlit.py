@@ -32,7 +32,7 @@ def procesar_documentos_streamlit(data_file, plantillas, docs_empresa=None, prog
     
     def update_progress(percent, message):
         if progress_callback:
-            progress_callback(percent, message)
+            progress_callback(min(percent, 100), message)
     
     temp_dir = tempfile.mkdtemp()
     
