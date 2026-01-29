@@ -186,6 +186,8 @@ def leer_datos_excel_memoria(excel_file):
 
 def procesar_docs_empresa_memoria(docs_files, temp_dir):
     """Procesa documentos de empresa desde UploadedFiles."""
+    from PyPDF2 import PdfReader
+    import openpyxl
     
     contexto = "\n\n═══════════════════════════════════════════════════════════════════════\n"
     contexto += "INFORMACIÓN ADICIONAL DE LA EMPRESA:\n"
@@ -203,14 +205,31 @@ def procesar_docs_empresa_memoria(docs_files, temp_dir):
             elif doc_file.name.endswith('.docx'):
                 doc = Document(temp_path)
                 contenido = '\n'.join([p.text for p in doc.paragraphs])
+            elif doc_file.name.endswith('.pdf'):
+                reader = PdfReader(temp_path)
+                contenido = ""
+                for pagina in reader.pages:
+                    contenido += pagina.extract_text() + "\n"
+            elif doc_file.name.endswith('.xlsx'):
+                wb = openpyxl.load_workbook(temp_path, data_only=True)
+                contenido = ""
+                for hoja in wb.sheetnames:
+                    ws = wb[hoja]
+                    contenido += f"\n--- Hoja: {hoja} ---\n"
+                    for fila in ws.iter_rows(values_only=True):
+                        valores = [str(v) for v in fila if v is not None]
+                        if valores:
+                            contenido += " | ".join(valores) + "\n"
+                wb.close()
             else:
                 contenido = f"[Documento: {doc_file.name}]"
             
             contexto += f"--- {doc_file.name} ---\n{contenido[:2000]}\n\n"
-        except:
-            pass
+        except Exception as e:
+            contexto += f"--- {doc_file.name} ---\n[Error procesando: {str(e)}]\n\n"
     
     return contexto
+
 
 def procesar_plantilla_word_memoria(plantilla_file, datos_estaticos, datos_ia, cliente_gemini, contexto_sistema, progress_callback=None):
     """Procesa una plantilla Word desde UploadedFile."""
