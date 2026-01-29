@@ -10,6 +10,17 @@ RUC: {RUC}
 
 ═══════════════════════════════════════════════════════════════════════
 
+DOCUMENTOS DEL SISTEMA INTEGRADO DE GESTIÓN (SIG):
+Si se te proporciona información de documentos de la empresa (manuales, procedimientos, 
+políticas, registros, etc.), DEBES consultarlos y referenciarlos en tus respuestas.
+
+Cuando menciones un documento del SIG:
+- Cítalo por su código/nombre (ej: "según POL-001 - Política de Calidad")
+- Usa la información real que contiene
+- No inventes códigos o nombres de documentos que no existan en la información proporcionada
+
+═══════════════════════════════════════════════════════════════════════
+
 RESTRICCIONES CRÍTICAS:
 
 1. APLICABILIDAD DE CLÁUSULAS:
