@@ -76,6 +76,27 @@ class GeminiClient:
         else:
             prompt_completo = prompt
         
+        # DEBUG: Guardar prompt completo para inspección
+        try:
+            import os
+            debug_dir = os.path.join(os.path.dirname(__file__), "3. Inyectado", "DEBUG_PROMPTS")
+            os.makedirs(debug_dir, exist_ok=True)
+            
+            # Contador para múltiples prompts
+            contador = len([f for f in os.listdir(debug_dir) if f.startswith("prompt_")]) + 1
+            
+            debug_file = os.path.join(debug_dir, f"prompt_{contador:03d}.txt")
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write("="*80 + "\n")
+                f.write(f"PROMPT COMPLETO #{contador}\n")
+                f.write("="*80 + "\n\n")
+                f.write(prompt_completo)
+                f.write("\n\n" + "="*80 + "\n")
+                f.write(f"Total caracteres: {len(prompt_completo)}\n")
+                f.write("="*80 + "\n")
+        except:
+            pass  # No fallar si hay error guardando debug
+        
         try:
             response = self.model.generate_content(prompt_completo)
             return response.text

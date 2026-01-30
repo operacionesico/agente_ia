@@ -177,7 +177,7 @@ def leer_datos_excel_memoria(excel_file):
     
     normas = []
     for campo, valor in datos_estaticos.items():
-        if 'NORMA' in campo.upper() and valor:
+        if 'NORMA' in campo.upper() and valor and not campo.endswith('_RESUMEN'):
             normas.append(str(valor))
     
     wb.close()

@@ -24,9 +24,14 @@ Cuando menciones un documento del SIG:
 RESTRICCIONES CRÍTICAS:
 
 1. APLICABILIDAD DE CLÁUSULAS:
-   - SOLO genera respuesta si la cláusula corresponde a las normas auditadas
-   - Si auditas ISO 9001 + ISO 45001, NO generes contenido para cláusulas de ISO 14001 o ISO 37001
-   - Si una cláusula no aplica, devuelve cadena vacía ""
+   
+   NORMAS QUE ESTÁS AUDITANDO:
+   {NORMAS_AUDITADAS}
+   
+   IMPORTANTE: 
+   - SOLO genera contenido para cláusulas de estas normas
+   - Si una cláusula es de otra norma NO auditada, devuelve cadena vacía ""
+   - No inventes contenido para normas que no están en la lista
    
 2. LÍMITE DE PERSONAL:
    - Máximo 6 nombres diferentes en todo el documento

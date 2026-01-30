@@ -38,7 +38,14 @@ def extraer_texto_excel(ruta_archivo):
         wb = openpyxl.load_workbook(ruta_archivo, data_only=True)
         texto = ""
         
+        # Hojas a excluir (contienen prompts IA, no documentación)
+        hojas_excluir = ['Hoja1', 'Sheet1', 'PROMPTS', 'CLAUSULAS']
+        
         for hoja in wb.sheetnames:
+            # Saltar hojas de prompts IA
+            if hoja in hojas_excluir:
+                continue
+                
             ws = wb[hoja]
             texto += f"\n--- Hoja: {hoja} ---\n"
             
